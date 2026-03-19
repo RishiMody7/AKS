@@ -54,9 +54,32 @@ Before you begin, make sure you have the following:
 **Cluster access**: Verify that you have network connectivity to your AKS Arc cluster. This might require being on the same network as the cluster or using a VPN/ExpressRoute connection to your Azure Local environment.
 
 **(Optional) Windows 11 environment setup**: On a Windows 11 machine, use winget to install or update the required tools (PowerShell, Azure CLI, kubectl, and Helm) as follows: 
+```powershell
+# Install PowerShell 
 
-{/* TODO: Steps to install */}
-(The -e flag ensures exact matching by ID. Omit the -e and specify version numbers if you need specific versions.) 
+winget install -e --id Microsoft.PowerShell 
+pwsh -v 
+
+# Install or Update - Azure CLI, Kubectl, Helm, Git 
+winget install -e --id Microsoft.AzureCLI 
+winget install -e --id Kubernetes.kubectl 
+winget install -e --id Helm.Helm 
+winget install -e --id Git.Git 
+
+winget update -e --id Microsoft.AzureCLI 
+winget update -e --id Kubernetes.kubectl 
+winget update -e --id Helm.Helm 
+winget update -e --id Git.Git 
+
+# Install or Update – Azure CLI Extensions (AKS Arc) 
+az extension add --name aksarc 
+az extension add --name connectedk8s 
+az extension update --name aksarc 
+az extension update --name connectedk8s 
+```
+:::note
+The -e flag ensures exact matching by ID. Omit the -e and specify version numbers if you need specific versions.
+:::
 
 ## Step 1: Create a namespace and Persistent Volume Claim (PVC)
 First, create a dedicated Kubernetes namespace for Triton and a **PersistentVolumeClaim** (PVC) for the model repository. The namespace logically isolates your Triton resources (server, provisioner pod, and so on), and the PVC provides persistent storage for model files and configuration. 
@@ -365,10 +388,9 @@ spec:
 ```
  
 
-This manifest will start the Triton server and expose three endpoints: 
+This manifest will start the Triton server and expose the following endpoint: 
 
 * HTTP (port 8000) for REST API requests (for example, health checks and inference via HTTP POST).
-{/* TODO: other 2 endpoints */}
 
 The Triton container is configured to **load the model repository from the PVC (mounted at /models)** and run the vLLM backend. The `nvidia.com/gpu: 1` resource limit ensures the pod is scheduled on a GPU node and given one GPU for inferencing. Once you apply this manifest, Kubernetes pulls the NVIDIA Triton image and launches the server pod. It may take a few minutes for the Triton pod to reach a Running state, as the vLLM backend downloads the model from Hugging Face on startup (if not already present) and then loads it into memory. Monitor the pod status and logs during this process.
 
